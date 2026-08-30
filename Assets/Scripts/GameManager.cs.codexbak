@@ -1,0 +1,148 @@
+using UnityEngine;
+using TMPro;
+using System.Collections.Generic;
+
+public class GameManager : MonoBehaviour
+{
+    public static GameManager Instance;
+
+    [Header("--- UI (ARAYÜZ) REFERANSLARI ---")]
+    public TextMeshProUGUI headerText; 
+    public TextMeshProUGUI scoreText;  
+    public TextMeshProUGUI targetText; 
+
+    [Header("--- ARKA PLAN VERİLERİ ---")]
+    private LevelData currentLevel;
+    private int currentMoves;
+    private float currentTime;
+    private int currentScore;
+    
+    // YENİ: Ana veriyi bozmamak için oyun içi geçici liste
+    private Dictionary<CarType, int> runtimeTargets = new Dictionary<CarType, int>();
+
+    void Awake()
+    {
+        Instance = this;
+    }
+
+    void Start()
+    {
+        currentLevel = GridManager.Instance.currentLevel;
+        if (currentLevel == null) return;
+
+        currentMoves = currentLevel.moveLimit;
+        currentTime = currentLevel.timeLimit;
+        currentScore = 0;
+
+        // Hedefleri Dictionary'ye (Geçici Hafızaya) kopyala
+        if (currentLevel.carsToCollect != null)
+        {
+            foreach (var target in currentLevel.carsToCollect)
+            {
+                if (!runtimeTargets.ContainsKey(target.carType))
+                    runtimeTargets.Add(target.carType, target.targetCount);
+            }
+        }
+
+        UpdateUI();
+    }
+
+    void Update()
+    {
+        if (currentLevel != null && currentLevel.levelType == LevelType.TimeAttack)
+        {
+            if (currentTime > 0)
+            {
+                currentTime -= Time.deltaTime;
+                UpdateUI(); 
+            }
+            else
+            {
+                headerText.text = "SÜRE BİTTİ!";
+            }
+        }
+    }
+
+    public void UseMove()
+    {
+        if (currentLevel.levelType != LevelType.TimeAttack && currentMoves > 0)
+        {
+            currentMoves--;
+            UpdateUI();
+
+            if (currentMoves <= 0)
+            {
+                Debug.Log("HAMLE BİTTİ! GAME OVER!");
+            }
+        }
+    }
+
+    public void AddScore(int points)
+    {
+        currentScore += points;
+        UpdateUI();
+    }
+
+    // YENİ: Bir araba patladığında bu fonksiyon o arabanın tipini alıp hedeften düşecek!
+    public void CollectCar(CarType poppedCarType)
+    {
+        if (currentLevel.levelType != LevelType.CollectCars) return;
+
+        // Eğer patlayan araba hedeflerimiz arasındaysa ve hala ihtiyacımız varsa sayıyı düş
+        if (runtimeTargets.ContainsKey(poppedCarType) && runtimeTargets[poppedCarType] > 0)
+        {
+            runtimeTargets[poppedCarType]--;
+            UpdateUI();
+
+            // KAZANMA KONTROLÜ
+            CheckWinCondition();
+        }
+    }
+
+    void CheckWinCondition()
+    {
+        bool isWon = true;
+        foreach (var count in runtimeTargets.Values)
+        {
+            if (count > 0) isWon = false; // Hala toplanacak araba var!
+        }
+
+        if (isWon)
+        {
+            Debug.Log("TEBRİKLER! BÜTÜN HEDEFLER TOPLANDI, BÖLÜM GEÇİLDİ!");
+            targetText.text = "BÖLÜM TAMAMLANDI!";
+        }
+    }
+
+    void UpdateUI()
+    {
+        if (currentLevel == null) return;
+
+        if (currentLevel.levelType == LevelType.TimeAttack)
+            headerText.text = "Süre: " + Mathf.CeilToInt(currentTime).ToString() + "s";
+        else if (currentLevel.moveLimit > 0)
+            headerText.text = "Hamle: " + currentMoves;
+        else
+            headerText.text = "Serbest Mod"; 
+
+        if (currentLevel.targetScore > 0)
+            scoreText.text = "Skor: " + currentScore + " / " + currentLevel.targetScore;
+        else
+            scoreText.text = "Skor: " + currentScore;
+
+        if (currentLevel.levelType == LevelType.CollectCars && runtimeTargets.Count > 0)
+        {
+            string targetString = "Görevler:\n";
+            foreach (var kvp in runtimeTargets)
+            {
+                // UI'da "Kalan: 5 Taksi" şeklinde gösterecek
+                targetString += "- Kalan: " + kvp.Value + " " + kvp.Key.ToString() + "\n";
+            }
+            targetText.text = targetString;
+        }
+        else if (currentLevel.levelType != LevelType.CollectCars)
+        {
+            targetText.text = ""; 
+        }
+    }
+}

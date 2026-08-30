@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a0bb45f7b026a2a44b469af433620e3c, type: 3}
+  m_Name: Level_2
+  m_EditorClassIdentifier: 
+  levelNumber: 2
+  winCondition: 1
+  targetScore: 0
+  carsToCollect:
+  - carType: 0
+    targetCount: 50
+  - carType: 1
+    targetCount: 20
+  useMoveLimit: 0
+  moveLimit: 50
+  useTimeLimit: 0
+  timeLimit: 150
+  closedLanes: 
+  blockedSlots: []
